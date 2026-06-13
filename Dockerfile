@@ -23,6 +23,14 @@ RUN cd /ComfyUI/custom_nodes && \
     cd ComfyUI-Manager && \
     pip install -r requirements.txt
 
+# Run ComfyUI-Manager in offline mode so it does NOT fetch the node registry
+# ("FETCH ComfyRegistry Data") at startup. That network fetch blocks ComfyUI's
+# HTTP server from responding for ~100s, causing the entrypoint readiness probe
+# to time out and the worker to crash-loop. A headless inference worker never
+# needs the registry.
+RUN mkdir -p /ComfyUI/user/__manager && \
+    printf '[default]\nnetwork_mode = offline\n' > /ComfyUI/user/__manager/config.ini
+
 RUN cd /ComfyUI/custom_nodes && \
     git clone https://github.com/city96/ComfyUI-GGUF && \
     cd ComfyUI-GGUF && \

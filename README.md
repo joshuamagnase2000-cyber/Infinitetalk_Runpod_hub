@@ -36,6 +36,8 @@ This template includes all the necessary components to run InfiniteTalk as a Run
 
 *   **Dockerfile**: Configures the environment and installs all dependencies required for model execution.
 *   **handler.py**: Implements the handler function that processes requests for RunPod Serverless.
+*   **comfy_client.py**: Shared ComfyUI client helpers (queue/submit/wait) used by both the handler and the warm-up script.
+*   **warmup.py**: Startup warm-up that pre-loads model weights into VRAM to reduce cold start (see [Cold Start Optimization](#-cold-start-optimization)).
 *   **entrypoint.sh**: Performs initialization tasks when the worker starts.
 *   **I2V_single.json**: Image-to-Video single-person workflow configuration.
 *   **I2V_multi.json**: Image-to-Video multi-person workflow configuration.
@@ -302,6 +304,34 @@ The handler automatically selects the appropriate workflow based on your input p
 | `"video"` | `"multi"` | V2V_multi.json |
 
 The workflows are based on ComfyUI and include all necessary nodes for InfiniteTalk processing. Each workflow is optimized for its specific use case and includes the appropriate model configurations.
+
+## ⚡ Cold Start Optimization (zero added cost)
+
+A serverless worker has three cold-start phases: (1) container schedule/pull, (2) ComfyUI process boot, and (3) **loading ~26GB of model weights into VRAM**. Phase 3 is the slow one. The ~26GB of weights are already baked into the Docker image (loaded from local NVMe), which is RunPod's recommended approach — so moving models to a *network volume would not help and is generally slower*. The remaining cost is the VRAM load, which this template reduces using **only free levers** — no always-on workers, no raised idle timeouts, nothing that bills idle GPU time.
+
+### 1. Startup warm-up (built in)
+
+On boot, `entrypoint.sh` runs `warmup.py` — a single **minimal** I2V workflow using the bundled example assets — **before** the handler starts accepting jobs. This forces ComfyUI to load the diffusion / VAE / text-encoder / clip-vision / audio models into VRAM during boot, so the worker becomes warm as part of initialization.
+
+To keep its own GPU time negligible, the warm-up runs at the cheapest settings that still load every weight: **256×256 resolution, one 81-frame chunk, and a single diffusion step**. It loads the same models a real job would, but skips almost all of the sampling compute.
+
+*   Best-effort: any failure is logged and ignored so it can never block the endpoint.
+*   Warms the most common path (I2V single). The `InfiniteTalk-Multi` model still loads on the first multi-person request.
+*   Disable it by setting the endpoint environment variable `WARMUP_ENABLED=false`.
+
+| Env Var | Default | Description |
+| --- | --- | --- |
+| `WARMUP_ENABLED` | `true` | Pre-load models into VRAM at startup. Set to `false` to skip warm-up. |
+
+### 2. Keep FlashBoot enabled (free)
+
+Leave **FlashBoot** on (the RunPod default). It snapshots a worker once it's warmed up, so when the endpoint scales up — or replaces a worker — the new worker **restores the warmed state instead of reloading ~26GB from scratch**. This is what makes the warm-up pay off across requests, and it costs nothing extra.
+
+### Honest trade-off
+
+These levers are free because they never keep an idle GPU billing. The cost is that a **scale-to-zero endpoint can still cold-start its first request** after a long idle period: that first worker loads the weights during boot (the warm-up), and the user who triggered it waits through that. FlashBoot then keeps subsequent scale-ups fast.
+
+The only way to make even that first request instant is to run an **active (min) worker**, but that bills GPU time 24/7 whether or not anyone is using it — so it is intentionally **not** recommended here. If you later decide the always-on cost is worth it for your traffic, set min workers ≥ 1 on the endpoint; the built-in warm-up will keep that worker VRAM-warm.
 
 ## 🙏 Original Project
 
