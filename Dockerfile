@@ -3,7 +3,7 @@ FROM nvidia/cuda:12.8.1-cudnn-devel-ubuntu22.04 as runtime
 
 # wget 설치 (URL 다운로드를 위해)
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    wget git python3 python3-pip python3-dev \
+    wget curl git python3 python3-pip python3-dev \
     libgl1 libglib2.0-0 ffmpeg && \
     ln -sf /usr/bin/python3 /usr/bin/python && \
     ln -sf /usr/bin/pip3 /usr/bin/pip && \
