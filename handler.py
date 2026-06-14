@@ -251,8 +251,10 @@ def handler(job):
 
     # 필수 필드 검증 및 기본값 설정
     prompt_text = job_input.get("prompt", "A person talking naturally")
-    width = job_input.get("width", 512)
-    height = job_input.get("height", 512)
+    # 기본 출력 해상도: 1280x720 (16:9). 281번 ImageResizeKJv2가 crop 모드로
+    # 입력 비율과 무관하게 이 해상도로 맞추므로 출력은 항상 16:9가 됩니다.
+    width = job_input.get("width", 1280)
+    height = job_input.get("height", 720)
 
     # max_frame 설정 (입력이 없으면 오디오 길이 기반으로 자동 계산)
     max_frame = job_input.get("max_frame")

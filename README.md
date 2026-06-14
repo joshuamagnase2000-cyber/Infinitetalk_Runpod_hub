@@ -86,8 +86,8 @@ The `input` object must contain the following fields. Images, videos, and audio 
 | Parameter | Type | Required | Default | Description |
 | --- | --- | --- | --- | --- |
 | `prompt` | `string` | No | `"A person talking naturally"` | Description text for the video to be generated |
-| `width` | `integer` | No | `512` | Width of the output video in pixels |
-| `height` | `integer` | No | `512` | Height of the output video in pixels |
+| `width` | `integer` | No | `1280` | Width of the output video in pixels (default 16:9) |
+| `height` | `integer` | No | `720` | Height of the output video in pixels (default 16:9) |
 | `max_frame` | `integer` | No | Auto-calculated | Maximum number of frames for the output video (automatically calculated based on audio duration if not provided) |
 | `force_offload` | `boolean` | No | `true` | Whether to offload model components to CPU during inference. Set to `false` for ~1.5x faster processing on high-VRAM GPUs (24GB+). Default `true` prevents OOM on smaller GPUs. |
 | `network_volume` | `boolean` | No | `false` | Whether to use network volume for output storage. If `true`, returns file path instead of Base64 data |
@@ -103,8 +103,8 @@ The `input` object must contain the following fields. Images, videos, and audio 
     "prompt": "A person is talking in a natural way.",
     "image_url": "https://example.com/portrait.jpg",
     "wav_url": "https://example.com/audio.wav",
-    "width": 512,
-    "height": 512
+    "width": 1280,
+    "height": 720
   }
 }
 ```
@@ -119,8 +119,8 @@ The `input` object must contain the following fields. Images, videos, and audio 
     "image_url": "https://example.com/portrait.jpg",
     "wav_url": "https://example.com/audio1.wav",
     "wav_url_2": "https://example.com/audio2.wav",
-    "width": 512,
-    "height": 512
+    "width": 1280,
+    "height": 720
   }
 }
 ```
@@ -134,8 +134,8 @@ The `input` object must contain the following fields. Images, videos, and audio 
     "prompt": "A person singing a song.",
     "video_url": "https://example.com/input_video.mp4",
     "wav_url": "https://example.com/audio.wav",
-    "width": 512,
-    "height": 512
+    "width": 1280,
+    "height": 720
   }
 }
 ```
@@ -150,8 +150,8 @@ The `input` object must contain the following fields. Images, videos, and audio 
     "video_url": "https://example.com/input_video.mp4",
     "wav_url": "https://example.com/audio1.wav",
     "wav_url_2": "https://example.com/audio2.wav",
-    "width": 512,
-    "height": 512
+    "width": 1280,
+    "height": 720
   }
 }
 ```
@@ -165,8 +165,8 @@ The `input` object must contain the following fields. Images, videos, and audio 
     "prompt": "A person is talking in a natural way.",
     "image_base64": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD...",
     "wav_base64": "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=",
-    "width": 512,
-    "height": 512
+    "width": 1280,
+    "height": 720
   }
 }
 ```
@@ -180,8 +180,8 @@ The `input` object must contain the following fields. Images, videos, and audio 
     "prompt": "A person is talking in a natural way.",
     "video_path": "/my_volume/input_video.mp4",
     "wav_path": "/my_volume/audio.wav",
-    "width": 512,
-    "height": 512
+    "width": 1280,
+    "height": 720
   }
 }
 ```
@@ -195,8 +195,8 @@ The `input` object must contain the following fields. Images, videos, and audio 
     "prompt": "A person talking in a natural way.",
     "image_url": "https://example.com/portrait.jpg",
     "wav_url": "https://example.com/audio.wav",
-    "width": 512,
-    "height": 512,
+    "width": 1280,
+    "height": 720,
     "network_volume": true
   }
 }
