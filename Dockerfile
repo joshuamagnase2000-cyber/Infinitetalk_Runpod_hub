@@ -59,6 +59,16 @@ RUN cd /ComfyUI/custom_nodes && \
     cd ComfyUI-WanVideoWrapper && \
     pip install -r requirements.txt
 
+# Pin PyTorch to the CUDA 12.8 build. ComfyUI's requirements.txt (and some custom
+# nodes) install the default torch wheel, which is now built for CUDA 12.9+ and needs a
+# host driver newer than 12.8. The 48 GB pools (A6000/A40, L40/L40S/6000 Ada) run on
+# hosts with the 12.8 driver, so that torch aborts at startup with "NVIDIA driver is too
+# old (found version 12080)" and the worker crash-loops. cu128 wheels accept the 12.8
+# driver and match this image's CUDA toolkit. Must run before sageattention so it
+# compiles against this torch.
+RUN pip install --force-reinstall --no-cache-dir \
+    torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu128
+
 # SageAttention: faster attention kernels for WanVideo (workflows use attention_mode=sageattn).
 # Compiles CUDA extensions, which is why this needs the -devel base image (nvcc present).
 RUN pip install sageattention
