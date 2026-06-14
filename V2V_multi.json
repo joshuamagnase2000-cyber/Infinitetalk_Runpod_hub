@@ -14,7 +14,7 @@
       "base_precision": "fp16_fast",
       "quantization": "fp8_e4m3fn",
       "load_device": "offload_device",
-      "attention_mode": "sdpa",
+      "attention_mode": "sageattn",
       "block_swap_args": [
         "134",
         0
@@ -147,7 +147,7 @@
   },
   "134": {
     "inputs": {
-      "blocks_to_swap": 20,
+      "blocks_to_swap": 0,
       "offload_img_emb": false,
       "offload_txt_emb": false,
       "use_non_blocking": true,
