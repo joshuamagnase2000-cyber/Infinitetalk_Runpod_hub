@@ -92,6 +92,19 @@ The `input` object must contain the following fields. Images, videos, and audio 
 | `force_offload` | `boolean` | No | `true` | Whether to offload model components to CPU during inference. Set to `false` for ~1.5x faster processing on high-VRAM GPUs (24GB+). Default `true` prevents OOM on smaller GPUs. |
 | `network_volume` | `boolean` | No | `false` | Whether to use network volume for output storage. If `true`, returns file path instead of Base64 data |
 
+#### Lipsync Quality Tuning (optional)
+These parameters override values baked into the workflow JSON. Omit them to keep the defaults.
+
+| Parameter | Type | Required | Default | Description |
+| --- | --- | --- | --- | --- |
+| `audio_scale` | `float` | No | `1.0` (image) / `1.5` (video) | Strength of the audio→mouth conditioning. The strongest lipsync lever — raise toward `1.5`–`2.0` for tighter sync (too high can look exaggerated). |
+| `steps` | `integer` | No | `6` (image) / `4` (video) | Diffusion sampling steps. More steps = better quality/sync but slower. |
+| `cfg` | `float` | No | `1.0` | Classifier-free guidance scale for the text prompt. |
+| `audio_cfg_scale` | `float` | No | `1.0` | Classifier-free guidance scale for the audio conditioning. |
+| `seed` | `integer` | No | `2` | Random seed for reproducibility. Change it to get a different take. |
+| `frame_window_size` | `integer` | No | `81` | Context window (frames) used for audio-visual alignment. |
+| `motion_frame` | `integer` | No | `9` | Frames used for temporal smoothing of mouth/motion. |
+
 **Request Examples:**
 
 #### 1. I2V Single (Image-to-Video Single Person)

@@ -148,6 +148,31 @@ def calculate_max_frames_from_audio(wav_path, wav_path_2=None, fps=25):
     return max_frames
 
 
+def inject_node_input(prompt, preferred_id, class_type, param, value):
+    """ComfyUI 노드의 inputs에 파라미터를 주입한다.
+
+    preferred_id로 먼저 노드를 찾고, class_type이 맞지 않으면 class_type으로 검색(폴백)한다.
+    value가 None이면 아무 동작도 하지 않으므로 워크플로우 JSON의 기본값이 그대로 유지된다.
+    """
+    if value is None:
+        return
+
+    node_id = None
+    if preferred_id in prompt and prompt[preferred_id].get("class_type") == class_type:
+        node_id = preferred_id
+    else:
+        for nid, node_data in prompt.items():
+            if node_data.get("class_type") == class_type:
+                node_id = nid
+                break
+
+    if node_id:
+        prompt[node_id].setdefault("inputs", {})[param] = value
+        logger.info(f"✅ 노드 {node_id} ({class_type}) 업데이트됨: {param}={value}")
+    else:
+        logger.warning(f"⚠️ 경고: {class_type} 노드를 찾을 수 없습니다. {param} 설정을 건너뜁니다.")
+
+
 def handler(job):
     job_input = job.get("input", {})
 
@@ -281,32 +306,33 @@ def handler(job):
     # ------------------------------------------------------------------
     # 동적 Force Offload 설정
     # ------------------------------------------------------------------
-    # 1. 입력에서 force_offload 읽기 (기본값 True: 작은 GPU에서 OOM 방지)
+    # 입력에서 force_offload 읽기 (기본값 True: 작은 GPU에서 OOM 방지)
     force_offload = job_input.get("force_offload", True)
     logger.info(f"🔧 설정: force_offload={force_offload}")
+    inject_node_input(prompt, "128", "WanVideoSampler", "force_offload", force_offload)
 
-    # 2. WanVideoSampler 노드에 force_offload 파라미터 주입
-    sampler_node_id = None
-    preferred_id = "128"
+    # ------------------------------------------------------------------
+    # 동적 립싱크 품질 튜닝 파라미터 (선택 사항)
+    # ------------------------------------------------------------------
+    # 입력하지 않으면 None이 되어 워크플로우 JSON의 기본값이 그대로 사용된다.
+    # WanVideoSampler (노드 128)
+    steps = job_input.get("steps")  # 샘플링 스텝 수 (높을수록 품질↑/속도↓, 기본 6 I2V / 4 V2V)
+    cfg = job_input.get("cfg")  # 프롬프트 가이던스 스케일 (기본 1.0)
+    seed = job_input.get("seed")  # 재현성을 위한 시드 (기본 2)
+    # MultiTalkWav2VecEmbeds (노드 194)
+    audio_scale = job_input.get("audio_scale")  # 오디오→입모양 강도 (립싱크 핵심, 기본 1.0 I2V / 1.5 V2V)
+    audio_cfg_scale = job_input.get("audio_cfg_scale")  # 오디오 가이던스 스케일 (기본 1)
+    # WanVideoImageToVideoMultiTalk (노드 192)
+    frame_window_size = job_input.get("frame_window_size")  # 오디오-영상 정렬 컨텍스트 윈도우 (기본 81)
+    motion_frame = job_input.get("motion_frame")  # 입모양 모션 시간적 평활화 프레임 (기본 9)
 
-    # 효율성을 위해 먼저 선호 ID(128) 확인
-    if preferred_id in prompt and prompt[preferred_id].get("class_type") == "WanVideoSampler":
-        sampler_node_id = preferred_id
-    else:
-        # ID가 다른 경우 class type으로 검색 (폴백)
-        for node_id, node_data in prompt.items():
-            if node_data.get("class_type") == "WanVideoSampler":
-                sampler_node_id = node_id
-                break
-
-    # sampler 노드를 찾은 경우 force_offload 파라미터 주입
-    if sampler_node_id:
-        # setdefault를 사용하여 'inputs' 딕셔너리가 없으면 생성
-        inputs = prompt[sampler_node_id].setdefault("inputs", {})
-        inputs["force_offload"] = force_offload
-        logger.info(f"✅ 노드 {sampler_node_id} (WanVideoSampler) 업데이트됨: force_offload={force_offload}")
-    else:
-        logger.warning("⚠️ 경고: WanVideoSampler 노드를 찾을 수 없습니다. 워크플로우 기본값을 사용합니다.")
+    inject_node_input(prompt, "128", "WanVideoSampler", "steps", steps)
+    inject_node_input(prompt, "128", "WanVideoSampler", "cfg", cfg)
+    inject_node_input(prompt, "128", "WanVideoSampler", "seed", seed)
+    inject_node_input(prompt, "194", "MultiTalkWav2VecEmbeds", "audio_scale", audio_scale)
+    inject_node_input(prompt, "194", "MultiTalkWav2VecEmbeds", "audio_cfg_scale", audio_cfg_scale)
+    inject_node_input(prompt, "192", "WanVideoImageToVideoMultiTalk", "frame_window_size", frame_window_size)
+    inject_node_input(prompt, "192", "WanVideoImageToVideoMultiTalk", "motion_frame", motion_frame)
     # ------------------------------------------------------------------
 
     # 파일 존재 여부 확인

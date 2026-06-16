@@ -1,0 +1,21 @@
+{
+  "tests": [
+    {
+      "name": "i2v_single_smoke",
+      "input": {
+        "input_type": "image",
+        "person_count": "single",
+        "width": 512,
+        "height": 512,
+        "steps": 6,
+        "audio_scale": 1.5
+      },
+      "timeout": 600000
+    }
+  ],
+  "config": {
+    "gpuTypeId": "NVIDIA L4",
+    "gpuCount": 1,
+    "allowedCudaVersions": ["12.8"]
+  }
+}
