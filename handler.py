@@ -389,13 +389,26 @@ def handler(job):
     output_video_path = None
     logger.info("출력 비디오 검색 중...")
 
+    # SkyReelsV3 A2V 워크플로우는 무음 참조 클립(예: 노드 328, 81프레임)을 최종
+    # 오디오 합성 클립(예: 노드 131, *-audio.mp4)보다 먼저 출력한다. 단순히 첫 노드를
+    # 고르면 짧은 참조 클립이 반환되어 영상이 멈추므로, *-audio.mp4 출력을 우선 선택한다.
     for node_id in videos:
-        if videos[node_id]:
-            output_video_path = videos[node_id][0]
-            logger.info(f"노드 {node_id}에서 출력 비디오 발견: {output_video_path}")
+        for path in videos[node_id]:
+            if path.endswith("-audio.mp4"):
+                output_video_path = path
+                logger.info(f"노드 {node_id}에서 오디오 합성 출력 비디오 선택: {output_video_path}")
+                break
+        if output_video_path:
             break
-        else:
-            logger.info(f"노드 {node_id}는 비어있음")
+
+    if not output_video_path:
+        for node_id in videos:
+            if videos[node_id]:
+                output_video_path = videos[node_id][0]
+                logger.info(f"노드 {node_id}에서 출력 비디오 발견: {output_video_path}")
+                break
+            else:
+                logger.info(f"노드 {node_id}는 비어있음")
 
     if not output_video_path:
         logger.error("출력 비디오를 찾을 수 없습니다. 모든 노드가 비어있습니다.")
